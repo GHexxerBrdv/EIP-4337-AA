@@ -27,21 +27,21 @@ contract HelperConfig is Script {
     NetworkConfig public localNetworkConfig;
     mapping(uint256 chainid => NetworkConfig config) public networkConfig;
 
-    function getConfig() public  returns(NetworkConfig memory) {
+    function getConfig() public returns (NetworkConfig memory) {
         return getConfigByChainId(block.chainid);
     }
 
-    function getConfigByChainId(uint256 id) public  returns(NetworkConfig memory) {
-        if(id == LOCAL) {
+    function getConfigByChainId(uint256 id) public returns (NetworkConfig memory) {
+        if (id == LOCAL) {
             return anvilConfig();
-        } else if(networkConfig[id].account != address(0)) {
+        } else if (networkConfig[id].account != address(0)) {
             return networkConfig[id];
         } else {
             revert HelperConfig__InvalidChainId(id);
         }
     }
 
-    function getPolygonNetworkConfig() public pure returns(NetworkConfig memory) {
+    function getPolygonNetworkConfig() public pure returns (NetworkConfig memory) {
         return NetworkConfig({
             entryPoint: 0x43370240c309f6cC0815929a176609267971224F,
             target: 0xac4206661B9992c5F140558c0C09227681cf1C07,
@@ -49,8 +49,8 @@ contract HelperConfig is Script {
         });
     }
 
-    function anvilConfig() public returns(NetworkConfig memory) {
-        if(localNetworkConfig.account != address(0)) {
+    function anvilConfig() public returns (NetworkConfig memory) {
+        if (localNetworkConfig.account != address(0)) {
             return localNetworkConfig;
         }
 
