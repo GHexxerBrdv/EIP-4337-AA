@@ -3,15 +3,42 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
+import {Token} from "../src/Token.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {EIP4337AA} from "../src/EIP_4337_AA.sol";
+import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
+// import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract SignedPackedUSerOperations is Script {
     using MessageHashUtils for bytes32;
 
-    function run() external {}
+    EIP4337AA aa;
+    HelperConfig helperConfig;
+    Token token;
+
+    function run() external {
+        helperConfig = new HelperConfig();
+
+        address dest = helperConfig.getConfig().target;
+        uint256 value = 0;
+        address acc = DevOpsTools.get_most_recent_deployment("EIP4337AA", block.chainid);
+
+        bytes memory functionData = abi.encodeWithSelector(Token.mint.selector, helperConfig.getConfig().account, 1e18);
+        bytes memory executionData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, functionData);
+
+        PackedUserOperation memory op = generateSignedUserOperation(executionData, helperConfig.getConfig(), acc);
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = op;
+
+        vm.startBroadcast();
+        IEntryPoint(helperConfig.getConfig().entryPoint).handleOps(ops, payable(vm.envAddress("ACC2")));
+        vm.stopBroadcast();
+
+        assert(Token(dest).balanceOf(vm.envAddress("ACC")) == 1e18);
+    }
 
     function generateSignedUserOperation(
         bytes memory callData,
@@ -32,7 +59,7 @@ contract SignedPackedUSerOperations is Script {
         if (block.chainid == 31337) {
             (v, r, s) = vm.sign(Anvil_Key, digest);
         } else {
-            (v, r, s) = vm.sign(config.account, digest);
+            (v, r, s) = vm.sign(vm.envUint("PRIV"), digest);
         }
 
         op.signature = abi.encodePacked(r, s, v);
@@ -44,20 +71,33 @@ contract SignedPackedUSerOperations is Script {
         pure
         returns (PackedUserOperation memory)
     {
-        uint128 verificationGasLimit = 16777216;
-        uint128 callGasLimit = verificationGasLimit;
-        uint128 maxPriorityFeePerGas = 256;
-        uint128 maxFeePerGas = maxPriorityFeePerGas;
+        uint128 verificationGasLimit = 200000;
+        uint128 callGasLimit = 300000;
+        uint128 maxPriorityFeePerGas = 30 gwei;
+        uint128 maxFeePerGas = 50 gwei;
         return PackedUserOperation({
             sender: sender,
             nonce: nonce,
             initCode: hex"",
             callData: callData,
             accountGasLimits: bytes32(uint256(verificationGasLimit) << 128 | callGasLimit),
-            preVerificationGas: verificationGasLimit,
+            preVerificationGas: 50000,
             gasFees: bytes32(uint256(maxPriorityFeePerGas) << 128 | maxFeePerGas),
             paymasterAndData: hex"",
             signature: hex""
         });
+    }
+}
+
+contract fundAA is Script {
+    function run() external {
+        address aa = DevOpsTools.get_most_recent_deployment("EIP4337AA", block.chainid);
+
+        vm.startBroadcast(vm.envUint("PRIV"));
+        (bool ok,) = payable(aa).call{value: 1e18}("");
+        (ok);
+        vm.stopBroadcast();
+
+        assert(aa.balance == 1e18);
     }
 }

@@ -12,7 +12,7 @@ contract HelperConfig is Script {
     uint256 public constant POLY = 80002;
 
     address public constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address public constant WALLET = 0xA7407106D3c9a5ab2131a7AcAa343b6219Aa1Dd6;
+    address public WALLET = vm.envAddress("ACC");
 
     struct NetworkConfig {
         address entryPoint;
@@ -41,10 +41,10 @@ contract HelperConfig is Script {
         }
     }
 
-    function getPolygonNetworkConfig() public pure returns (NetworkConfig memory) {
+    function getPolygonNetworkConfig() public view returns (NetworkConfig memory) {
         return NetworkConfig({
-            entryPoint: 0x43370240c309f6cC0815929a176609267971224F,
-            target: 0xac4206661B9992c5F140558c0C09227681cf1C07,
+            entryPoint: 0x0000000071727De22E5E9d8BAf0edAc6f37da032,
+            target: 0xe22062F79cef1A2F38b7682570cEAFe07C280709,
             account: WALLET
         });
     }

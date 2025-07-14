@@ -17,6 +17,8 @@ contract EIP4337AA is IAccount, Ownable {
 
     IEntryPoint private immutable i_entryPoint;
 
+    receive() external payable {}
+
     modifier onlyEntryPoint() {
         require(msg.sender == address(i_entryPoint), EIP4337AA__NotFromEntryPoint());
         _;
