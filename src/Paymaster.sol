@@ -16,6 +16,7 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
     error PaymasterEIP4337__SponserShipLimitExeed(uint256 maxCost, uint256 maxSponsorship);
     error PaymasterEIP4337__NotEnoughBalance();
     error PaymasterEIP4337__TransactionFailed();
+    error PaymasterEIP4337__InsufficientDeposit(address paymaster, uint256 maxCost);
 
     IEntryPoint private immutable i_entryPoint;
     uint256 private maxSponsorship;
@@ -39,8 +40,8 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
         onlyEntrypoint
         returns (bytes memory context, uint256 validationData)
     {
-        if (address(this).balance < maxCost) {
-            revert PaymasterEIP4337__NotEnoughBalance();
+        if (i_entryPoint.balanceOf(address(this)) < maxCost) {
+            revert PaymasterEIP4337__InsufficientDeposit(address(this), maxCost);
         }
 
         if (maxCost > maxSponsorship) {
@@ -60,4 +61,23 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
         maxSponsorship = sponsorShip;
         emit ChangedSponserShip(sponsorShip);
     }
+
+    function depositToEntryPoint(uint256 amount) external onlyOwner {
+        if(address(this).balance > amount) {
+            revert PaymasterEIP4337__NotEnoughBalance();
+        }
+
+        i_entryPoint.depositTo{value: amount}(address(this));
+    }
+
+    function withdrawEth(address to, uint256 amount) external onlyOwner {
+        if(amount > address(this).balance) {
+            revert PaymasterEIP4337__NotEnoughBalance();
+        }
+
+        (bool ok,) = to.call{value: amount}("");
+        if(!ok) {
+            revert PaymasterEIP4337__TransactionFailed();
+        }
+    }   
 }
