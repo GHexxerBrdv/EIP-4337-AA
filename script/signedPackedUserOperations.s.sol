@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.19;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
@@ -10,7 +10,6 @@ import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
-// import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract SignedPackedUSerOperations is Script {
     using MessageHashUtils for bytes32;
@@ -71,18 +70,18 @@ contract SignedPackedUSerOperations is Script {
         pure
         returns (PackedUserOperation memory)
     {
-        uint128 verificationGasLimit = 200000;
-        uint128 callGasLimit = 300000;
-        uint128 maxPriorityFeePerGas = 30 gwei;
-        uint128 maxFeePerGas = 50 gwei;
+        uint128 verificationGasLimit = 16777216;
+        uint128 callGasLimit = verificationGasLimit;
+        uint128 maxPriorityFeePerGas = 256;
+        uint128 maxFeePerGas = maxPriorityFeePerGas;
         return PackedUserOperation({
             sender: sender,
             nonce: nonce,
             initCode: hex"",
             callData: callData,
-            accountGasLimits: bytes32(uint256(verificationGasLimit) << 128 | callGasLimit),
-            preVerificationGas: 50000,
-            gasFees: bytes32(uint256(maxPriorityFeePerGas) << 128 | maxFeePerGas),
+            accountGasLimits: bytes32(uint256(verificationGasLimit) << 128 | uint256(callGasLimit)),
+            preVerificationGas: verificationGasLimit,
+            gasFees: bytes32(uint256(maxPriorityFeePerGas) << 128 | uint256(maxFeePerGas)),
             paymasterAndData: hex"",
             signature: hex""
         });
@@ -94,10 +93,10 @@ contract fundAA is Script {
         address aa = DevOpsTools.get_most_recent_deployment("EIP4337AA", block.chainid);
 
         vm.startBroadcast(vm.envUint("PRIV"));
-        (bool ok,) = payable(aa).call{value: 1e18}("");
+        (bool ok,) = payable(aa).call{value: 0.05 ether}("");
         (ok);
         vm.stopBroadcast();
 
-        assert(aa.balance == 1e18);
+        assert(aa.balance == 0.05 ether);
     }
 }

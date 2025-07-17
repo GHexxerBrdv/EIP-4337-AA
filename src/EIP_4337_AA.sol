@@ -34,13 +34,7 @@ contract EIP4337AA is IAccount, Ownable {
         onlyEntryPoint
         returns (uint256 validationData)
     {
-        bytes32 ethHash = userOpHash.toEthSignedMessageHash();
-        (address signatory,,) = ethHash.tryRecover(userOp.signature);
-        if (signatory != owner()) {
-            validationData = 1;
-        }
-        validationData = 0;
-
+        validationData = _verifySignature(userOp, userOpHash);
         _payPrefund(missingAccountFunds);
     }
 
@@ -49,6 +43,15 @@ contract EIP4337AA is IAccount, Ownable {
             (bool ok,) = msg.sender.call{value: amount}("");
             (ok);
         }
+    }
+
+    function _verifySignature(PackedUserOperation memory userOp, bytes32 userOpHash) internal view returns (uint256) {
+        bytes32 ethHash = userOpHash.toEthSignedMessageHash();
+        (address signatory,,) = ethHash.tryRecover(userOp.signature);
+        if (signatory != owner()) {
+            return 1;
+        }
+        return 0;
     }
 
     function execute(address dest, uint256 amount, bytes calldata data) external onlyEntryPoint {

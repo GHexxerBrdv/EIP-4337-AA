@@ -10,6 +10,7 @@ contract HelperConfig is Script {
 
     uint256 public constant LOCAL = 31337;
     uint256 public constant POLY = 80002;
+    uint256 public constant SEPO = 11155111;
 
     address public constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address public WALLET = vm.envAddress("ACC");
@@ -22,6 +23,7 @@ contract HelperConfig is Script {
 
     constructor() {
         networkConfig[POLY] = getPolygonNetworkConfig();
+        networkConfig[SEPO] = getSepoliaNetworkConfig();
     }
 
     NetworkConfig public localNetworkConfig;
@@ -34,11 +36,21 @@ contract HelperConfig is Script {
     function getConfigByChainId(uint256 id) public returns (NetworkConfig memory) {
         if (id == LOCAL) {
             return anvilConfig();
-        } else if (networkConfig[id].account != address(0)) {
-            return networkConfig[id];
+        } else if (id == 80002) {
+            return networkConfig[POLY];
+        } else if (id == 11155111) {
+            return networkConfig[POLY];
         } else {
             revert HelperConfig__InvalidChainId(id);
         }
+    }
+
+    function getSepoliaNetworkConfig() public view returns (NetworkConfig memory) {
+        return NetworkConfig({
+            entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789,
+            target: 0x6b233dd6d07177824634f839BB692373A76404eB,
+            account: WALLET
+        });
     }
 
     function getPolygonNetworkConfig() public view returns (NetworkConfig memory) {
