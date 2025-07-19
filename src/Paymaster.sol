@@ -23,6 +23,9 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
     IEntryPoint private immutable i_entryPoint;
     uint256 private maxSponsorship;
 
+    mapping(address => uint256) public sponsoredOperations;
+    mapping(address => uint256) public totalSponsordGas;
+
     event ChangedSponserShip(uint256 newSponsorship);
 
     constructor(address _entryPoint, uint256 sponsorShip) Ownable(msg.sender) {
@@ -57,7 +60,12 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
     function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost, uint256 actualUserOpFeePerGas)
         external
         onlyEntrypoint
-    {}
+    {
+        address account = address(bytes20(context[0:20]));
+
+        sponsoredOperations[account]++;
+        totalSponsordGas[account] = actualGasCost;
+    }
 
     function changeSponsorShip(uint256 sponsorShip) external onlyOwner {
         maxSponsorship = sponsorShip;
