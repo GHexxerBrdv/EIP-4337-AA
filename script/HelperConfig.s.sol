@@ -39,7 +39,7 @@ contract HelperConfig is Script {
         } else if (id == 80002) {
             return networkConfig[POLY];
         } else if (id == 11155111) {
-            return networkConfig[POLY];
+            return networkConfig[SEPO];
         } else {
             revert HelperConfig__InvalidChainId(id);
         }

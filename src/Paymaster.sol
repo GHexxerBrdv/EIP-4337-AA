@@ -20,8 +20,8 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
     error PaymasterEIP4337__ZeroAddress();
     error PaymasterEIP4337__ZeroAmount();
 
-    IEntryPoint private immutable i_entryPoint;
-    uint256 private maxSponsorship;
+    IEntryPoint public immutable i_entryPoint;
+    uint256 public maxSponsorship;
 
     mapping(address => uint256) public sponsoredOperations;
     mapping(address => uint256) public totalSponsordGas;
