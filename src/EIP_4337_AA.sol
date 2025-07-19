@@ -47,7 +47,7 @@ contract EIP4337AA is IAccount, Ownable {
 
     function _verifySignature(PackedUserOperation memory userOp, bytes32 userOpHash) internal view returns (uint256) {
         bytes32 ethHash = userOpHash.toEthSignedMessageHash();
-        (address signatory,,) = ethHash.tryRecover(userOp.signature);
+        address signatory = ethHash.recover(userOp.signature);
         if (signatory != owner()) {
             return 1;
         }

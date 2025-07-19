@@ -17,6 +17,8 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
     error PaymasterEIP4337__NotEnoughBalance();
     error PaymasterEIP4337__TransactionFailed();
     error PaymasterEIP4337__InsufficientDeposit(address paymaster, uint256 maxCost);
+    error PaymasterEIP4337__ZeroAddress();
+    error PaymasterEIP4337__ZeroAmount();
 
     IEntryPoint private immutable i_entryPoint;
     uint256 private maxSponsorship;
@@ -48,8 +50,8 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
             revert PaymasterEIP4337__SponserShipLimitExeed(maxCost, maxSponsorship);
         }
 
-        context = "";
-        validationData = 0;
+        validationData = _verifySignature(userOp, userOpHash);
+        context = abi.encodePacked(userOp.sender);
     }
 
     function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost, uint256 actualUserOpFeePerGas)
@@ -62,22 +64,58 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
         emit ChangedSponserShip(sponsorShip);
     }
 
-    function depositToEntryPoint(uint256 amount) external onlyOwner {
-        if(address(this).balance > amount) {
-            revert PaymasterEIP4337__NotEnoughBalance();
+    function depositToEntryPoint(uint256 amount) external payable onlyOwner {
+        if (amount == 0) {
+            revert PaymasterEIP4337__ZeroAmount();
         }
 
-        i_entryPoint.depositTo{value: amount}(address(this));
+        if (msg.value == 0) {
+            if (address(this).balance < amount) {
+                revert PaymasterEIP4337__NotEnoughBalance();
+            }
+
+            i_entryPoint.depositTo{value: amount}(address(this));
+        } else {
+            i_entryPoint.depositTo{value: msg.value}(address(this));
+        }
     }
 
     function withdrawEth(address to, uint256 amount) external onlyOwner {
-        if(amount > address(this).balance) {
+        if (to == address(0)) {
+            revert PaymasterEIP4337__ZeroAddress();
+        }
+
+        if (amount == 0) {
+            revert PaymasterEIP4337__ZeroAmount();
+        }
+
+        if (amount > address(this).balance) {
             revert PaymasterEIP4337__NotEnoughBalance();
         }
 
         (bool ok,) = to.call{value: amount}("");
-        if(!ok) {
+        if (!ok) {
             revert PaymasterEIP4337__TransactionFailed();
         }
-    }   
+    }
+
+    function withdrawFromEntryPoint(address to, uint256 amount) external onlyOwner {
+        if (to == address(0)) {
+            revert PaymasterEIP4337__ZeroAddress();
+        }
+        if (amount == 0) {
+            revert PaymasterEIP4337__ZeroAmount();
+        }
+
+        i_entryPoint.withdrawTo(payable(to), amount);
+    }
+
+    function _verifySignature(PackedUserOperation memory userOp, bytes32 userOpHash) internal pure returns (uint256) {
+        bytes32 ethHash = userOpHash.toEthSignedMessageHash();
+        address signatory = ethHash.recover(userOp.signature);
+        if (signatory != userOp.sender) {
+            return 1;
+        }
+        return 0;
+    }
 }
