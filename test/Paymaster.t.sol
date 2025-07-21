@@ -26,12 +26,11 @@ contract PaymasterTest is Test {
     uint256 public constant AMOUNT = 1 ether;
 
     function setUp() public {
-        deployer = new DeployPaymaster();
-        paymaster = deployer.run();
         userOp = new SignedPackedUSerOperations();
         usdc = new Token();
         DeployEIP4337AA deploy = new DeployEIP4337AA();
         (config, acc) = deploy.deployMinimalAccount();
+        paymaster = new PaymasterEIP4337(config.getConfig().entryPoint, 1e18);
         address admin = makeAddr("admin");
         vm.deal(admin, 20 ether);
 
@@ -54,6 +53,7 @@ contract PaymasterTest is Test {
         PackedUserOperation memory op = userOp.generateSignedUserOperation(callData, config.getConfig(), address(acc));
         bytes32 opHash = IEntryPoint(config.getConfig().entryPoint).getUserOpHash(op);
 
+        paymaster.depositToEntryPoint(1e18);
         vm.prank(config.getConfig().entryPoint);
         paymaster.validatePaymasterUserOp(op, opHash, 1500);
     }
