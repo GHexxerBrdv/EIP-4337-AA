@@ -31,7 +31,7 @@ contract PaymasterTest is Test {
         userOp = new SignedPackedUSerOperations();
         usdc = new Token();
         DeployEIP4337AA deploy = new DeployEIP4337AA();
-        (config, acc) = deploy.run();
+        (config, acc) = deploy.deployMinimalAccount();
         address admin = makeAddr("admin");
         vm.deal(admin, 20 ether);
 

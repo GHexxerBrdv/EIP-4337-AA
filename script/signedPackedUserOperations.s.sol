@@ -10,22 +10,25 @@ import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
+// import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract SignedPackedUSerOperations is Script {
     using MessageHashUtils for bytes32;
 
-    EIP4337AA aa;
-    HelperConfig helperConfig;
-    Token token;
+    // Token token;
 
     function run() external {
-        helperConfig = new HelperConfig();
+        // helperConfig = HelperConfig(DevOpsTools.get_most_recent_deployment("HelperConfig", block.chainid));
+        HelperConfig helperConfig = new HelperConfig();
 
         address dest = helperConfig.getConfig().target;
+        // console2.log("the address of the destination contract is: ", dest);
         uint256 value = 0;
         address acc = DevOpsTools.get_most_recent_deployment("EIP4337AA", block.chainid);
-
+        // console2.log("the address of deployed contract is: ", acc);
         bytes memory functionData = abi.encodeWithSelector(Token.mint.selector, helperConfig.getConfig().account, 1e18);
+        // console2.log("the address of the account contract is: ", helperConfig.getConfig().account);
+        // console2.log("the address of the entrypoint contract is: ", helperConfig.getConfig().entryPoint);
         bytes memory executionData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, functionData);
 
         PackedUserOperation memory op = generateSignedUserOperation(executionData, helperConfig.getConfig(), acc);
@@ -47,6 +50,7 @@ contract SignedPackedUSerOperations is Script {
         uint256 nonce = vm.getNonce(account) - 1;
         PackedUserOperation memory op = _generateUnsignedUserOperation(callData, account, nonce);
 
+        console2.log("the etnry pint address is : ", config.entryPoint);
         bytes32 opHash = IEntryPoint(config.entryPoint).getUserOpHash(op);
         bytes32 digest = opHash.toEthSignedMessageHash();
 
@@ -59,6 +63,7 @@ contract SignedPackedUSerOperations is Script {
             (v, r, s) = vm.sign(Anvil_Key, digest);
         } else {
             (v, r, s) = vm.sign(vm.envUint("PRIV"), digest);
+            // (v, r, s) = vm.sign(config.account, digest);
         }
 
         op.signature = abi.encodePacked(r, s, v);
@@ -96,7 +101,5 @@ contract fundAA is Script {
         (bool ok,) = payable(aa).call{value: 0.05 ether}("");
         (ok);
         vm.stopBroadcast();
-
-        assert(aa.balance == 0.05 ether);
     }
 }

@@ -25,7 +25,7 @@ contract EIP4337Test is Test {
 
     function setUp() public {
         DeployEIP4337AA deployer = new DeployEIP4337AA();
-        (config, acc) = deployer.run();
+        (config, acc) = deployer.deployMinimalAccount();
         usdc = new Token();
         userOp = new SignedPackedUSerOperations();
     }
