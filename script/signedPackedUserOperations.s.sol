@@ -49,8 +49,7 @@ contract SignedPackedUSerOperations is Script {
     ) public view returns (PackedUserOperation memory) {
         uint256 nonce = vm.getNonce(account) - 1;
         PackedUserOperation memory op = _generateUnsignedUserOperation(callData, account, nonce);
-
-        console2.log("the etnry pint address is : ", config.entryPoint);
+        console2.log("the etnry point address is : ", config.entryPoint);
         bytes32 opHash = IEntryPoint(config.entryPoint).getUserOpHash(op);
         bytes32 digest = opHash.toEthSignedMessageHash();
 
@@ -77,16 +76,16 @@ contract SignedPackedUSerOperations is Script {
     {
         uint128 verificationGasLimit = 16777216;
         uint128 callGasLimit = verificationGasLimit;
-        uint128 maxPriorityFeePerGas = 256;
-        uint128 maxFeePerGas = maxPriorityFeePerGas;
+        uint128 maxPriorityFeePerGas = 2e9;
+        uint128 maxFeePerGas = 10e9;
         return PackedUserOperation({
             sender: sender,
             nonce: nonce,
             initCode: hex"",
             callData: callData,
-            accountGasLimits: bytes32(uint256(verificationGasLimit) << 128 | uint256(callGasLimit)),
+            accountGasLimits: bytes32(uint256(verificationGasLimit) << 128 | callGasLimit),
             preVerificationGas: verificationGasLimit,
-            gasFees: bytes32(uint256(maxPriorityFeePerGas) << 128 | uint256(maxFeePerGas)),
+            gasFees: bytes32(uint256(maxPriorityFeePerGas) << 128 | maxFeePerGas),
             paymasterAndData: hex"",
             signature: hex""
         });

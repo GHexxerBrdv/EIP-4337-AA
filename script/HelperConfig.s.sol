@@ -49,7 +49,7 @@ contract HelperConfig is Script {
         return NetworkConfig({
             entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789,
             target: 0x6b233dd6d07177824634f839BB692373A76404eB,
-            account: WALLET
+            account: 0xA7407106D3c9a5ab2131a7AcAa343b6219Aa1Dd6
         });
     }
 
