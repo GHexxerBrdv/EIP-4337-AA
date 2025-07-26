@@ -2,13 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
+import {PackedUserOperation, UserOperation} from "account-abstraction/interfaces/IAccount.sol";
 import {Token} from "../src/Token.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {EIP4337AA} from "../src/EIP_4337_AA.sol";
 import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+// import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "../src/Helper/IEntryPoint.sol";
 import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
 // import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
@@ -31,8 +32,8 @@ contract SignedPackedUSerOperations is Script {
         // console2.log("the address of the entrypoint contract is: ", helperConfig.getConfig().entryPoint);
         bytes memory executionData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, functionData);
 
-        PackedUserOperation memory op = generateSignedUserOperation(executionData, helperConfig.getConfig(), acc);
-        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        UserOperation memory op = generateSignedUserOperation(executionData, helperConfig.getConfig(), acc);
+        UserOperation[] memory ops = new UserOperation[](1);
         ops[0] = op;
 
         vm.startBroadcast();
@@ -46,9 +47,12 @@ contract SignedPackedUSerOperations is Script {
         bytes memory callData,
         HelperConfig.NetworkConfig memory config,
         address account
-    ) public view returns (PackedUserOperation memory) {
+    ) public view returns (UserOperation memory) {
+        // uint256 nonce = vm.getNonce(account);
         uint256 nonce = vm.getNonce(account) - 1;
-        PackedUserOperation memory op = _generateUnsignedUserOperation(callData, account, nonce);
+        // IEntryPoint entrypoint = IEntryPoint(config.entryPoint);
+        // uint256 nonce = entrypoint.getNonce(account, 0);
+        UserOperation memory op = _generateUnsignedUserOperation(callData, account, nonce);
         console2.log("the etnry point address is : ", config.entryPoint);
         bytes32 opHash = IEntryPoint(config.entryPoint).getUserOpHash(op);
         bytes32 digest = opHash.toEthSignedMessageHash();
@@ -71,23 +75,30 @@ contract SignedPackedUSerOperations is Script {
 
     function _generateUnsignedUserOperation(bytes memory callData, address sender, uint256 nonce)
         internal
-        pure
-        returns (PackedUserOperation memory)
+        view
+        returns (UserOperation memory)
     {
-        uint128 verificationGasLimit = 16777216;
-        uint128 callGasLimit = verificationGasLimit;
-        uint128 maxPriorityFeePerGas = 2e9;
-        uint128 maxFeePerGas = 10e9;
-        return PackedUserOperation({
+        // Set realistic gas values for Sepolia
+        uint256 callGasLimit = 300000; // Increased from 200k
+        uint256 verificationGasLimit = 500000; // Increased from 200k
+        uint256 preVerificationGas = 100000; // Higher than standard tx to cover bundler overhead
+
+        // Gas fees - adjust based on current Sepolia conditions
+        uint256 maxPriorityFeePerGas = 2e9; // 2 Gwei
+        uint256 maxFeePerGas = 3e9; // 3 Gwei (base fee + priority fee)
+
+        return UserOperation({
             sender: sender,
             nonce: nonce,
-            initCode: hex"",
-            callData: callData,
-            accountGasLimits: bytes32(uint256(verificationGasLimit) << 128 | callGasLimit),
-            preVerificationGas: verificationGasLimit,
-            gasFees: bytes32(uint256(maxPriorityFeePerGas) << 128 | maxFeePerGas),
-            paymasterAndData: hex"",
-            signature: hex""
+            initCode: hex"", // Empty for existing accounts
+            callData: callData, // The actual execution call
+            callGasLimit: callGasLimit,
+            verificationGasLimit: verificationGasLimit,
+            preVerificationGas: preVerificationGas,
+            maxFeePerGas: maxFeePerGas,
+            maxPriorityFeePerGas: maxPriorityFeePerGas,
+            paymasterAndData: hex"", // No paymaster
+            signature: hex"" // Will be filled later
         });
     }
 }
@@ -95,10 +106,13 @@ contract SignedPackedUSerOperations is Script {
 contract fundAA is Script {
     function run() external {
         address aa = DevOpsTools.get_most_recent_deployment("EIP4337AA", block.chainid);
+        HelperConfig helperConfig = new HelperConfig();
+        address entryPoint = helperConfig.getConfig().entryPoint;
 
         vm.startBroadcast(vm.envUint("PRIV"));
-        (bool ok,) = payable(aa).call{value: 0.05 ether}("");
+        (bool ok,) = payable(aa).call{value: 0.03 ether}("");
         (ok);
+        // IEntryPoint(entryPoint).depositTo{value: 0.01 ether}(aa);
         vm.stopBroadcast();
     }
 }

@@ -4,14 +4,17 @@ pragma solidity ^0.8.24;
 import {Test, console2} from "forge-std/Test.sol";
 import {DeployPaymaster} from "../script/Paymaster.s.sol";
 import {PaymasterEIP4337} from "../src/Paymaster.sol";
-import {SignedPackedUSerOperations, PackedUserOperation} from "../script/signedPackedUserOperations.s.sol";
+import {
+    SignedPackedUSerOperations, PackedUserOperation, UserOperation
+} from "../script/signedPackedUserOperations.s.sol";
 import {Token} from "../src/Token.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP4337AA} from "../src/EIP_4337_AA.sol";
 import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
-import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+// import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {IEntryPoint} from "../src/Helper/IEntryPoint.sol";
 
 contract PaymasterTest is Test {
     using MessageHashUtils for bytes32;
@@ -50,7 +53,7 @@ contract PaymasterTest is Test {
         bytes memory functionData = abi.encodeWithSelector(Token.mint.selector, address(acc), AMOUNT);
         bytes memory callData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, functionData);
 
-        PackedUserOperation memory op = userOp.generateSignedUserOperation(callData, config.getConfig(), address(acc));
+        UserOperation memory op = userOp.generateSignedUserOperation(callData, config.getConfig(), address(acc));
         bytes32 opHash = IEntryPoint(config.getConfig().entryPoint).getUserOpHash(op);
 
         paymaster.depositToEntryPoint(1e18);

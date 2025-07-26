@@ -4,7 +4,10 @@ pragma solidity ^0.8.24;
 import {Test, console2} from "forge-std/Test.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
 import {
-    SignedPackedUSerOperations, PackedUserOperation, IEntryPoint
+    SignedPackedUSerOperations,
+    PackedUserOperation,
+    IEntryPoint,
+    UserOperation
 } from "../script/signedPackedUserOperations.s.sol";
 import {EIP4337AA} from "../src/EIP_4337_AA.sol";
 import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
@@ -68,8 +71,7 @@ contract EIP4337Test is Test {
         bytes memory callData = abi.encodeWithSelector(Token.mint.selector, address(acc), AMOUNT);
         bytes memory executeData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, callData);
 
-        PackedUserOperation memory op =
-            userOp.generateSignedUserOperation(executeData, config.getConfig(), address(acc));
+        UserOperation memory op = userOp.generateSignedUserOperation(executeData, config.getConfig(), address(acc));
 
         bytes32 hash = IEntryPoint(config.getConfig().entryPoint).getUserOpHash(op);
         address signatory = ECDSA.recover(hash.toEthSignedMessageHash(), op.signature);
@@ -83,8 +85,18 @@ contract EIP4337Test is Test {
         bytes memory callData = abi.encodeWithSelector(Token.mint.selector, address(acc), AMOUNT);
         bytes memory executeData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, callData);
 
-        PackedUserOperation memory op =
-            userOp.generateSignedUserOperation(executeData, config.getConfig(), address(acc));
+        UserOperation memory op = userOp.generateSignedUserOperation(executeData, config.getConfig(), address(acc));
+        // PackedUserOperation memory packedOp = PackedUserOperation(
+        //     op.sender,
+        //     op.nonce,
+        //     op.initCode,
+        //     op.callData,
+        //     op.accountGasLimits,
+        //     op.preVerificationGas,
+        //     op.gasFees,
+        //     op.paymasterAndData,
+        //     op.signature
+        // );
         bytes32 userOperationHash = IEntryPoint(config.getConfig().entryPoint).getUserOpHash(op);
 
         uint256 missingAccountFunds = 1e18;
@@ -95,6 +107,7 @@ contract EIP4337Test is Test {
     }
 
     function test_EntrypointExecute() public {
+        uint256 balanceBefore = config.getConfig().entryPoint.balance;
         address user = makeAddr("user");
         assertEq(usdc.balanceOf(address(acc)), 0);
         address dest = address(usdc);
@@ -102,17 +115,19 @@ contract EIP4337Test is Test {
         bytes memory callData = abi.encodeWithSelector(Token.mint.selector, address(acc), AMOUNT);
         bytes memory executeData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, callData);
 
-        PackedUserOperation memory op =
-            userOp.generateSignedUserOperation(executeData, config.getConfig(), address(acc));
+        UserOperation memory op = userOp.generateSignedUserOperation(executeData, config.getConfig(), address(acc));
 
-        vm.deal(address(acc), 1e18);
+        vm.deal(address(acc), 0.03 ether);
 
-        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        UserOperation[] memory ops = new UserOperation[](1);
         ops[0] = op;
 
         vm.prank(user);
         IEntryPoint(config.getConfig().entryPoint).handleOps(ops, payable(user));
         assertEq(usdc.balanceOf(address(acc)), 1e18);
+        uint256 balanceAfter = config.getConfig().entryPoint.balance;
+        console2.log("the balance of entry point contract is", balanceAfter - balanceBefore);
         console2.log("the remaining amount in acc: ", address(acc).balance);
+        console2.log("the original balance of the account is:", address(acc).balance + (balanceAfter - balanceBefore));
     }
 }

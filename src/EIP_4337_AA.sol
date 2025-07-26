@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IAccount, PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
-import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {PackedUserOperation, UserOperation} from "account-abstraction/interfaces/IAccount.sol";
+// import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+import {IAccount} from "./Helper/IAccount.sol";
+import {IEntryPoint} from "./Helper/IEntryPoint.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {console2} from "forge-std/Script.sol";
 
 contract EIP4337AA is IAccount, Ownable {
     using ECDSA for bytes32;
@@ -28,7 +31,7 @@ contract EIP4337AA is IAccount, Ownable {
         i_entryPoint = IEntryPoint(_entryPoint);
     }
 
-    function validateUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
+    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
         external
         override
         onlyEntryPoint
@@ -45,9 +48,10 @@ contract EIP4337AA is IAccount, Ownable {
         }
     }
 
-    function _verifySignature(PackedUserOperation memory userOp, bytes32 userOpHash) internal view returns (uint256) {
+    function _verifySignature(UserOperation memory userOp, bytes32 userOpHash) internal view returns (uint256) {
         bytes32 ethHash = userOpHash.toEthSignedMessageHash();
         address signatory = ethHash.recover(userOp.signature);
+        console2.log("the address of signatory is: ", signatory);
         if (signatory != owner()) {
             return 1;
         }

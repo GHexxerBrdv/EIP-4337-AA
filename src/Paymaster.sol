@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IPaymaster} from "account-abstraction/interfaces/IPaymaster.sol";
-import {IAccount, PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
+// import {IPaymaster} from "account-abstraction/interfaces/IPaymaster.sol";
+import {IPaymaster} from "../src/Helper/IPaymaster.sol";
+import {IAccount, PackedUserOperation, UserOperation} from "account-abstraction/interfaces/IAccount.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -40,7 +41,7 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
 
     receive() external payable {}
 
-    function validatePaymasterUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
         external
         onlyEntrypoint
         returns (bytes memory context, uint256 validationData)
@@ -118,7 +119,7 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
         i_entryPoint.withdrawTo(payable(to), amount);
     }
 
-    function _verifySignature(PackedUserOperation memory userOp, bytes32 userOpHash) internal pure returns (uint256) {
+    function _verifySignature(UserOperation memory userOp, bytes32 userOpHash) internal pure returns (uint256) {
         bytes32 ethHash = userOpHash.toEthSignedMessageHash();
         address signatory = ethHash.recover(userOp.signature);
         if (signatory != userOp.sender) {
