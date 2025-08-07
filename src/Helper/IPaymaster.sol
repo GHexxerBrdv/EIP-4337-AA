@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {UserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+// import {UserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 
 /**
  * The interface exposed by a paymaster contract, who agrees to pay the gas for user's operations.

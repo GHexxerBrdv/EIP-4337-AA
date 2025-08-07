@@ -3,12 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {HelperConfig} from "../script/HelperConfig.s.sol";
-import {
-    SignedPackedUSerOperations,
-    PackedUserOperation,
-    IEntryPoint,
-    UserOperation
-} from "../script/signedPackedUserOperations.s.sol";
+import {SignedPackedUSerOperations, UserOperation, IEntryPoint} from "../script/signedPackedUserOperations.s.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 import {EIP4337AA} from "../src/EIP_4337_AA.sol";
 import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";

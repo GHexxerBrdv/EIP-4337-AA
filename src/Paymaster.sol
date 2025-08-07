@@ -3,7 +3,8 @@ pragma solidity ^0.8.24;
 
 // import {IPaymaster} from "account-abstraction/interfaces/IPaymaster.sol";
 import {IPaymaster} from "../src/Helper/IPaymaster.sol";
-import {IAccount, PackedUserOperation, UserOperation} from "account-abstraction/interfaces/IAccount.sol";
+import {IAccount} from "account-abstraction/interfaces/IAccount.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

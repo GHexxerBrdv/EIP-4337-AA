@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {PackedUserOperation, UserOperation} from "account-abstraction/interfaces/IAccount.sol";
+// import {PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 // import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
 import {IAccount} from "./Helper/IAccount.sol";
 import {IEntryPoint} from "./Helper/IEntryPoint.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {console2} from "forge-std/Script.sol";
+// import {console2} from "forge-std/Script.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
 
 contract EIP4337AA is IAccount, Ownable {
     using ECDSA for bytes32;
@@ -51,11 +53,11 @@ contract EIP4337AA is IAccount, Ownable {
     function _verifySignature(UserOperation memory userOp, bytes32 userOpHash) internal view returns (uint256) {
         bytes32 ethHash = userOpHash.toEthSignedMessageHash();
         address signatory = ethHash.recover(userOp.signature);
-        console2.log("the address of signatory is: ", signatory);
+
         if (signatory != owner()) {
-            return 1;
+            return SIG_VALIDATION_FAILED;
         }
-        return 0;
+        return SIG_VALIDATION_SUCCESS;
     }
 
     function execute(address dest, uint256 amount, bytes calldata data) external onlyEntryPoint {

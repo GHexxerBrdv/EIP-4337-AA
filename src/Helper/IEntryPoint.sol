@@ -10,9 +10,10 @@ pragma solidity ^0.8.28;
 /* solhint-disable no-inline-assembly */
 /* solhint-disable reason-string */
 
-import {UserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+// import {UserOperation} from "account-abstraction/interfaces/PackedUserOperation.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 import "account-abstraction/interfaces/IStakeManager.sol";
-import "account-abstraction/interfaces/IAggregator.sol";
+// import "account-abstraction/interfaces/IAggregator.sol";
 import "account-abstraction/interfaces/INonceManager.sol";
 import "account-abstraction/interfaces/ISenderCreator.sol";
 
@@ -124,7 +125,7 @@ interface IEntryPoint is IStakeManager, INonceManager {
     struct UserOpsPerAggregator {
         UserOperation[] userOps;
         // Aggregator address
-        IAggregator aggregator;
+        // IAggregator aggregator;
         // Aggregated signature
         bytes signature;
     }

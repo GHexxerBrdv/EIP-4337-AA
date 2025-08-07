@@ -4,9 +4,8 @@ pragma solidity ^0.8.24;
 import {Test, console2} from "forge-std/Test.sol";
 import {DeployPaymaster} from "../script/Paymaster.s.sol";
 import {PaymasterEIP4337} from "../src/Paymaster.sol";
-import {
-    SignedPackedUSerOperations, PackedUserOperation, UserOperation
-} from "../script/signedPackedUserOperations.s.sol";
+import {SignedPackedUSerOperations, UserOperation} from "../script/signedPackedUserOperations.s.sol";
+import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
 import {Token} from "../src/Token.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";

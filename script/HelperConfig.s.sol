@@ -11,6 +11,7 @@ contract HelperConfig is Script {
     uint256 public constant LOCAL = 31337;
     uint256 public constant POLY = 80002;
     uint256 public constant SEPO = 11155111;
+    uint256 public constant ARB = 421614;
 
     address public constant ANVIL_DEFAULT_ACCOUNT = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address public WALLET = vm.envAddress("ACC");
@@ -24,6 +25,7 @@ contract HelperConfig is Script {
     constructor() {
         networkConfig[POLY] = getPolygonNetworkConfig();
         networkConfig[SEPO] = getSepoliaNetworkConfig();
+        networkConfig[ARB] = getArbitrumSepoliaNetworkConfig();
     }
 
     NetworkConfig public localNetworkConfig;
@@ -40,6 +42,8 @@ contract HelperConfig is Script {
             return networkConfig[POLY];
         } else if (id == 11155111) {
             return networkConfig[SEPO];
+        } else if (id == 421614) {
+            return networkConfig[ARB];
         } else {
             revert HelperConfig__InvalidChainId(id);
         }
@@ -49,7 +53,15 @@ contract HelperConfig is Script {
         return NetworkConfig({
             entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789,
             target: 0x6b233dd6d07177824634f839BB692373A76404eB,
-            account: 0xA7407106D3c9a5ab2131a7AcAa343b6219Aa1Dd6
+            account: WALLET
+        });
+    }
+
+    function getArbitrumSepoliaNetworkConfig() public view returns (NetworkConfig memory) {
+        return NetworkConfig({
+            entryPoint: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789,
+            target: 0xaf941d2f34a4eb73c76582276aFF55EbfCD025AC,
+            account: WALLET
         });
     }
 
