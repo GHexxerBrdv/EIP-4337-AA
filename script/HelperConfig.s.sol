@@ -12,13 +12,14 @@ contract HelperConfig is Script {
         address account;
     }
 
-    uint256 constant ARBITRUM_SEPOLIA_CHAIN_ID = 421614;
+    uint256 constant ARB = 421614;
+
     address constant BURNER_WALLET = 0xA7407106D3c9a5ab2131a7AcAa343b6219Aa1Dd6;
 
     mapping(uint256 chainId => NetworkConfig) public networkConfigs;
 
     constructor() {
-        networkConfigs[ARBITRUM_SEPOLIA_CHAIN_ID] = getArbitrumSepoliaConfig();
+        networkConfigs[ARB] = getArbitrumSepoliaConfig();
     }
 
     function getConfig() public view returns (NetworkConfig memory) {
