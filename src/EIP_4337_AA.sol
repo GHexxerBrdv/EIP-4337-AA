@@ -1,74 +1,103 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
-// import {PackedUserOperation} from "account-abstraction/interfaces/IAccount.sol";
-import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
-// import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-import {IAccount} from "./Helper/IAccount.sol";
-import {IEntryPoint} from "./Helper/IEntryPoint.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-// import {console2} from "forge-std/Script.sol";
-import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "account-abstraction/core/Helpers.sol";
+import {IAccount06} from "lib/account-abstraction/contracts/legacy/v06/IAccount06.sol";
+import {UserOperation06} from "lib/account-abstraction/contracts/legacy/v06/UserOperation06.sol";
+import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import {MessageHashUtils} from "lib/openzeppelin-contracts/contracts/utils/cryptography/MessageHashUtils.sol";
+import {ECDSA} from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
+import {SIG_VALIDATION_FAILED, SIG_VALIDATION_SUCCESS} from "lib/account-abstraction/contracts/core/Helpers.sol";
+import {IEntryPoint} from "lib/account-abstraction/contracts/legacy/v06/IEntryPoint06.sol";
 
-contract EIP4337AA is IAccount, Ownable {
-    using ECDSA for bytes32;
-    using MessageHashUtils for bytes32;
+contract ERC4337 is IAccount06, Ownable {
+    ////////////
+    // Errors //
+    ///////////
+    error ERC4337__NotFromEntryPoint();
+    error ERC4337__NotFromEntryPointOrOwner();
+    error ERC4337__CallFailed(bytes);
 
-    error EIP4337AA__NotFromEntryPoint();
-    error EIP4337AA__InvalidSigner();
-    error EIP4337AA__ExecutionFailed();
-
+    /////////////////////
+    // State Variables //
+    ////////////////////
     IEntryPoint private immutable i_entryPoint;
 
-    receive() external payable {}
-
-    modifier onlyEntryPoint() {
-        require(msg.sender == address(i_entryPoint), EIP4337AA__NotFromEntryPoint());
+    ///////////////
+    // Modifiers //
+    //////////////
+    modifier requireFromEntryPoint() {
+        if (msg.sender != address(i_entryPoint)) {
+            revert ERC4337__NotFromEntryPoint();
+        }
         _;
     }
 
-    constructor(address _entryPoint) Ownable(msg.sender) {
-        i_entryPoint = IEntryPoint(_entryPoint);
+    modifier requireFromEntryPointOrOwner() {
+        if (msg.sender != address(i_entryPoint) && msg.sender != owner()) {
+            revert ERC4337__NotFromEntryPointOrOwner();
+        }
+        _;
     }
 
-    function validateUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
-        external
-        override
-        onlyEntryPoint
-        returns (uint256 validationData)
-    {
-        validationData = _verifySignature(userOp, userOpHash);
-        _payPrefund(missingAccountFunds);
+    ///////////////
+    // functions //
+    //////////////
+    constructor(address entryPoint) Ownable(msg.sender) {
+        i_entryPoint = IEntryPoint(entryPoint);
     }
 
-    function _payPrefund(uint256 amount) internal {
-        if (amount != 0) {
-            (bool ok,) = msg.sender.call{value: amount}("");
-            (ok);
+    receive() external payable {}
+
+    ////////////////////////
+    // External Functions //
+    ///////////////////////
+    function execute(address dest, uint256 value, bytes calldata functionData) external requireFromEntryPointOrOwner {
+        (bool success, bytes memory result) = dest.call{value: value}(functionData);
+        if (!success) {
+            revert ERC4337__CallFailed(result);
         }
     }
 
-    function _verifySignature(UserOperation memory userOp, bytes32 userOpHash) internal view returns (uint256) {
-        bytes32 ethHash = userOpHash.toEthSignedMessageHash();
-        address signatory = ethHash.recover(userOp.signature);
+    // entrypoint -> this contract
+    function validateUserOp(UserOperation06 calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
+        external
+        requireFromEntryPoint
+        returns (uint256 validationData)
+    {
+        validationData = _validateSignature(userOp, userOpHash);
+        // _validateNonce()
+        _payPrefund(missingAccountFunds);
+    }
 
-        if (signatory != owner()) {
+    ////////////////////////
+    // Internal Functions //
+    ///////////////////////
+
+    //EIP-191 version of the signed hash
+    function _validateSignature(UserOperation06 calldata userOp, bytes32 userOpHash)
+        internal
+        view
+        returns (uint256 validationData)
+    {
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        address signer = ECDSA.recover(ethSignedMessageHash, userOp.signature);
+        if (signer != owner()) {
             return SIG_VALIDATION_FAILED;
         }
         return SIG_VALIDATION_SUCCESS;
     }
 
-    function execute(address dest, uint256 amount, bytes calldata data) external onlyEntryPoint {
-        (bool ok,) = dest.call{value: amount}(data);
-
-        if (!ok) {
-            revert EIP4337AA__ExecutionFailed();
+    function _payPrefund(uint256 missingAccountFunds) internal {
+        if (missingAccountFunds != 0) {
+            (bool success,) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
+            (success);
         }
     }
 
-    function getEntryPint() external view returns (address) {
+    /////////////
+    // Getters //
+    ////////////
+    function getEntryPoint() external view returns (address) {
         return address(i_entryPoint);
     }
 }

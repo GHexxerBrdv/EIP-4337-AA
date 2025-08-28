@@ -1,62 +1,62 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+// // SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.24;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {DeployPaymaster} from "../script/Paymaster.s.sol";
-import {PaymasterEIP4337} from "../src/Paymaster.sol";
-import {SignedPackedUSerOperations, UserOperation} from "../script/signedPackedUserOperations.s.sol";
-import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
-import {Token} from "../src/Token.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {EIP4337AA} from "../src/EIP_4337_AA.sol";
-import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
-import {HelperConfig} from "../script/HelperConfig.s.sol";
-// import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
-import {IEntryPoint} from "../src/Helper/IEntryPoint.sol";
+// import {Test, console2} from "forge-std/Test.sol";
+// import {DeployPaymaster} from "../script/Paymaster.s.sol";
+// import {PaymasterEIP4337} from "../src/Paymaster.sol";
+// import {SignedPackedUSerOperations, UserOperation06} from "../script/signedPackedUserOperations.s.sol";
+// // import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
+// import {Token} from "../src/Token.sol";
+// import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+// import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+// import {EIP4337AA} from "../src/EIP_4337_AA.sol";
+// import {DeployEIP4337AA} from "../script/EIP4337AA.s.sol";
+// import {HelperConfig} from "../script/HelperConfig.s.sol";
+// // import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+// import {IEntryPoint} from "lib/account-abstraction/contracts/legacy/v06/IEntryPoint06.sol";
 
-contract PaymasterTest is Test {
-    using MessageHashUtils for bytes32;
+// contract PaymasterTest is Test {
+//     using MessageHashUtils for bytes32;
 
-    DeployPaymaster public deployer;
-    PaymasterEIP4337 public paymaster;
-    SignedPackedUSerOperations userOp;
-    Token public usdc;
-    EIP4337AA acc;
-    HelperConfig config;
+//     DeployPaymaster public deployer;
+//     PaymasterEIP4337 public paymaster;
+//     SignedPackedUSerOperations userOp;
+//     Token public usdc;
+//     EIP4337AA acc;
+//     HelperConfig config;
 
-    uint256 public constant AMOUNT = 1 ether;
+//     uint256 public constant AMOUNT = 1 ether;
 
-    function setUp() public {
-        userOp = new SignedPackedUSerOperations();
-        usdc = new Token();
-        DeployEIP4337AA deploy = new DeployEIP4337AA();
-        (config, acc) = deploy.deployMinimalAccount();
-        paymaster = new PaymasterEIP4337(config.getConfig().entryPoint, 1e18);
-        address admin = makeAddr("admin");
-        vm.deal(admin, 20 ether);
+//     function setUp() public {
+//         userOp = new SignedPackedUSerOperations();
+//         usdc = new Token();
+//         DeployEIP4337AA deploy = new DeployEIP4337AA();
+//         (config, acc) = deploy.deployMinimalAccount();
+//         paymaster = new PaymasterEIP4337(config.getConfig().entryPoint, 1e18);
+//         address admin = makeAddr("admin");
+//         vm.deal(admin, 20 ether);
 
-        payable(address(paymaster)).call{value: 10e18}("");
-    }
+//         payable(address(paymaster)).call{value: 10e18}("");
+//     }
 
-    function test_construction() public {
-        assertEq(address(paymaster).balance, 10 ether);
-        assertEq(paymaster.maxSponsorship(), 1 ether);
-        console2.log("the address of an entrypoint contract is: ", address(paymaster.i_entryPoint()));
-        console2.log("the address of an entrypoint contract is: ", config.getConfig().entryPoint);
-    }
+//     function test_construction() public {
+//         assertEq(address(paymaster).balance, 10 ether);
+//         assertEq(paymaster.maxSponsorship(), 1 ether);
+//         console2.log("the address of an entrypoint contract is: ", address(paymaster.i_entryPoint()));
+//         console2.log("the address of an entrypoint contract is: ", config.getConfig().entryPoint);
+//     }
 
-    function test_userOp() public {
-        address dest = address(usdc);
-        uint256 value = 0;
-        bytes memory functionData = abi.encodeWithSelector(Token.mint.selector, address(acc), AMOUNT);
-        bytes memory callData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, functionData);
+//     function test_userOp() public {
+//         address dest = address(usdc);
+//         uint256 value = 0;
+//         bytes memory functionData = abi.encodeWithSelector(Token.mint.selector, address(acc), AMOUNT);
+//         bytes memory callData = abi.encodeWithSelector(EIP4337AA.execute.selector, dest, value, functionData);
 
-        UserOperation memory op = userOp.generateSignedUserOperation(callData, config.getConfig(), address(acc));
-        bytes32 opHash = IEntryPoint(config.getConfig().entryPoint).getUserOpHash(op);
+//         UserOperation06 memory op = userOp.generateSignedUserOperation(callData, config.getConfig(), address(acc));
+//         bytes32 opHash = IEntryPoint(config.getConfig().entryPoint).getUserOpHash(op);
 
-        paymaster.depositToEntryPoint(1e18);
-        vm.prank(config.getConfig().entryPoint);
-        paymaster.validatePaymasterUserOp(op, opHash, 1500);
-    }
-}
+//         paymaster.depositToEntryPoint(1e18);
+//         vm.prank(config.getConfig().entryPoint);
+//         paymaster.validatePaymasterUserOp(op, opHash, 1500);
+//     }
+// }

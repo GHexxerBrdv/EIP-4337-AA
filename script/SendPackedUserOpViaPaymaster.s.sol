@@ -11,7 +11,7 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 import {ERC4337} from "src/EIP_4337_AA.sol";
 import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 
-contract SignedPackedUSerOperations is Script {
+contract SendPackedUserOpUsingPaymaster is Script {
     using MessageHashUtils for bytes32;
 
     // Make sure you trust this user - don't run this on Mainnet!
@@ -24,11 +24,12 @@ contract SignedPackedUSerOperations is Script {
         address dest = helperConfig.getConfig().token;
         uint256 value = 0;
         address ERC4337Address = DevOpsTools.get_most_recent_deployment("ERC4337", block.chainid);
+        address paymaster = DevOpsTools.get_most_recent_deployment("SimpleWhitelistPaymaster06", block.chainid);
 
         bytes memory functionData = abi.encodeWithSelector(IERC20.approve.selector, RANDOM_APPROVER, allowanceAmount);
         bytes memory executeCalldata = abi.encodeWithSelector(ERC4337.execute.selector, dest, value, functionData);
         UserOperation06 memory userOp =
-            generateSignedUserOperation(executeCalldata, helperConfig.getConfig(), ERC4337Address);
+            _buildAndSignUserOp(executeCalldata, helperConfig.getConfig(), ERC4337Address, paymaster);
         UserOperation06[] memory ops = new UserOperation06[](1);
         ops[0] = userOp;
 
@@ -38,14 +39,33 @@ contract SignedPackedUSerOperations is Script {
         vm.stopBroadcast();
     }
 
-    function generateSignedUserOperation(
+    function _buildAndSignUserOp(
         bytes memory callData,
         HelperConfig.NetworkConfig memory config,
-        address erc4337
+        address erc4337,
+        address paymaster
     ) public view returns (UserOperation06 memory) {
         // 1. Generate the unsigned data
         uint256 nonce = INonceManager06(config.entryPoint).getNonce(erc4337, 0);
-        UserOperation06 memory userOp = _generateUnsignedUserOperation(callData, erc4337, nonce);
+        // gas params: set reasonably high to avoid AA21 (prefund) surprises
+        uint128 verificationGasLimit = 1_000_000;
+        uint128 callGasLimit = 1_000_000;
+        uint128 maxPriorityFeePerGas = 1 gwei;
+        uint128 maxFeePerGas = 1 gwei;
+
+        UserOperation06 memory userOp = UserOperation06({
+            sender: erc4337,
+            nonce: nonce,
+            initCode: hex"",
+            callData: callData,
+            callGasLimit: callGasLimit,
+            verificationGasLimit: verificationGasLimit,
+            preVerificationGas: 21000,
+            maxFeePerGas: maxFeePerGas,
+            maxPriorityFeePerGas: maxPriorityFeePerGas,
+            paymasterAndData: abi.encodePacked(paymaster),
+            signature: hex""
+        });
 
         // 2. Get the userOp Hash
         bytes32 userOpHash = IEntryPoint(config.entryPoint).getUserOpHash(userOp);
@@ -60,30 +80,5 @@ contract SignedPackedUSerOperations is Script {
 
         userOp.signature = abi.encodePacked(r, s, v); // Note the order
         return userOp;
-    }
-
-    function _generateUnsignedUserOperation(bytes memory callData, address sender, uint256 nonce)
-        internal
-        pure
-        returns (UserOperation06 memory)
-    {
-        uint128 verificationGasLimit = 1_000_000; // pick sane values
-        uint128 callGasLimit = 1_000_000;
-        uint128 maxPriorityFeePerGas = 1 gwei;
-        uint128 maxFeePerGas = 1 gwei;
-
-        return UserOperation06({
-            sender: sender,
-            nonce: nonce,
-            initCode: hex"",
-            callData: callData,
-            callGasLimit: callGasLimit,
-            verificationGasLimit: verificationGasLimit,
-            preVerificationGas: 21000,
-            maxFeePerGas: maxFeePerGas,
-            maxPriorityFeePerGas: maxPriorityFeePerGas,
-            paymasterAndData: hex"",
-            signature: hex""
-        });
     }
 }

@@ -2,15 +2,15 @@
 pragma solidity ^0.8.24;
 
 // import {IPaymaster} from "account-abstraction/interfaces/IPaymaster.sol";
-import {IPaymaster} from "../src/Helper/IPaymaster.sol";
-import {IAccount} from "account-abstraction/interfaces/IAccount.sol";
-import {UserOperation} from "account-abstraction/interfaces/UserOperation.sol";
-import {IEntryPoint} from "account-abstraction/interfaces/IEntryPoint.sol";
+
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {IEntryPoint} from "lib/account-abstraction/contracts/legacy/v06/IEntryPoint06.sol";
+import {IPaymaster06} from "lib/account-abstraction/contracts/legacy/v06/IPaymaster06.sol";
+import {UserOperation06} from "lib/account-abstraction/contracts/legacy/v06/UserOperation06.sol";
 
-contract PaymasterEIP4337 is IPaymaster, Ownable {
+contract PaymasterEIP4337 is IPaymaster06, Ownable {
     using MessageHashUtils for bytes32;
     using ECDSA for bytes32;
 
@@ -42,8 +42,9 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
 
     receive() external payable {}
 
-    function validatePaymasterUserOp(UserOperation calldata userOp, bytes32 userOpHash, uint256 maxCost)
+    function validatePaymasterUserOp(UserOperation06 calldata userOp, bytes32 userOpHash, uint256 maxCost)
         external
+        view
         onlyEntrypoint
         returns (bytes memory context, uint256 validationData)
     {
@@ -59,10 +60,7 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
         context = abi.encodePacked(userOp.sender);
     }
 
-    function postOp(PostOpMode mode, bytes calldata context, uint256 actualGasCost, uint256 actualUserOpFeePerGas)
-        external
-        onlyEntrypoint
-    {
+    function postOp(PostOpMode, /*mode*/ bytes calldata context, uint256 actualGasCost) external onlyEntrypoint {
         address account = address(bytes20(context[0:20]));
 
         sponsoredOperations[account]++;
@@ -120,7 +118,7 @@ contract PaymasterEIP4337 is IPaymaster, Ownable {
         i_entryPoint.withdrawTo(payable(to), amount);
     }
 
-    function _verifySignature(UserOperation memory userOp, bytes32 userOpHash) internal pure returns (uint256) {
+    function _verifySignature(UserOperation06 memory userOp, bytes32 userOpHash) internal pure returns (uint256) {
         bytes32 ethHash = userOpHash.toEthSignedMessageHash();
         address signatory = ethHash.recover(userOp.signature);
         if (signatory != userOp.sender) {

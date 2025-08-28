@@ -2,22 +2,19 @@
 pragma solidity ^0.8.24;
 
 import {Script} from "forge-std/Script.sol";
-import {EIP4337AA} from "../src/EIP_4337_AA.sol";
-import {HelperConfig} from "./HelperConfig.s.sol";
+import {ERC4337} from "src/EIP_4337_AA.sol";
+import {HelperConfig} from "script/HelperConfig.s.sol";
 
-contract DeployEIP4337AA is Script {
-    function run() public {
-        deployMinimalAccount();
-    }
+contract DeployERC4337 is Script {
+    HelperConfig helperConfig = new HelperConfig();
+    HelperConfig.NetworkConfig config = helperConfig.getConfig();
+    ERC4337 erc4337;
 
-    function deployMinimalAccount() public returns (HelperConfig, EIP4337AA) {
-        HelperConfig helperConfig = new HelperConfig();
-        HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
-
+    function run() public returns (HelperConfig, ERC4337) {
         vm.startBroadcast(config.account);
-        EIP4337AA minimalAccount = new EIP4337AA(config.entryPoint);
-        minimalAccount.transferOwnership(config.account);
+        erc4337 = new ERC4337(config.entryPoint);
+        erc4337.transferOwnership(config.account);
         vm.stopBroadcast();
-        return (helperConfig, minimalAccount);
+        return (helperConfig, erc4337);
     }
 }

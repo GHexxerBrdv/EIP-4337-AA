@@ -2,21 +2,18 @@
 pragma solidity ^0.8.24;
 
 import {Script} from "forge-std/Script.sol";
-import {PaymasterEIP4337} from "../src/Paymaster.sol";
-import {HelperConfig} from "./HelperConfig.s.sol";
+import {SimpleWhitelistPaymaster06} from "src/Paymaster2.sol";
+import {HelperConfig} from "script/HelperConfig.s.sol";
 
 contract DeployPaymaster is Script {
-    PaymasterEIP4337 public paymaster;
-    HelperConfig public helperConfig;
+    HelperConfig helperConfig = new HelperConfig();
+    HelperConfig.NetworkConfig config = helperConfig.getConfig();
+    SimpleWhitelistPaymaster06 paymaster;
 
-    function run() external returns (PaymasterEIP4337) {
-        helperConfig = new HelperConfig();
-        HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
-
+    function run() public returns (HelperConfig, SimpleWhitelistPaymaster06) {
         vm.startBroadcast(config.account);
-        paymaster = new PaymasterEIP4337(config.entryPoint, 1 ether);
+        paymaster = new SimpleWhitelistPaymaster06(config.entryPoint);
         vm.stopBroadcast();
-
-        return paymaster;
+        return (helperConfig, paymaster);
     }
 }
